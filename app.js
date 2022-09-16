@@ -1,19 +1,21 @@
-//Input: Player hits start on game
-//Apple generates in random spot
-//Use WASD or arrow keys to move snake
-//Snake is updated/grows for each time the snake eats the apple
-    //Apple generates in a new spot once eaten
-//Snake gets longer by removing the tail and adding to the head
-//Game ends when snake runs into itself or into a wall
-//Score shows how long the snake was
-//Reset the game with a button
+/*
+Input: Player hits start on game
+    Apple and snake generate
+Use WASD or arrow keys to move snake
+Snake is updated/grows for each time the snake eats the apple
+    Apple generates in a new spot once eaten
+    Snake gets longer by removing the tail and adding to the head
+Game ends when snake runs into itself or into a wall
+Score shows how long the snake was
+Reset the game with a button
 
-//Change speed
-//Track stats like max points, avg points, etc. between games
+Bonus:
+Change speed
+Track stats like max points, avg points, etc. between games
+*/
 
 const boardElem = document.getElementById('board');
-const button = document.getElementById('game-start')
-let snakeBody = [{ x:11, y: 11}]
+let snakeBody = [{x: 11, y: 11}]
 let move = {x: 0, y: 0};
 let apple = {x: 5, y: 5};
 let snakeSpeed = 1;
@@ -21,10 +23,22 @@ let bodyGrow = 0;
 let gameState = false;
 let score = document.getElementById('score');
 
-let start = document.getElementById("game-start").addEventListener("click", (startGame))
+//Listener for starting a game
+let gameStart = document.getElementById("game-start").addEventListener("click", () => {
+    if (gameState == false) {
+        score.innerText = "Score: 0"
+        move = {x: 0, y: 0}
+        gameState = true
+        renderGame();
+    } else {
+        renderGame();
+    }
+});
 
+
+//Function that places the snake on the board
 function createSnake(board) {
-    board.innerHTML = ''
+    board.innerHTML = '';
     snakeBody.forEach(body => {
         const snakeElem = document.createElement('div')
         snakeElem.style.gridRowStart = body.y
@@ -34,6 +48,7 @@ function createSnake(board) {
     })
   };
 
+//Function that places the apple on the board
 function placeApple() {
     const appleElem = document.createElement('div')
     appleElem.style.gridRowStart = apple.y
@@ -42,34 +57,54 @@ function placeApple() {
     board.appendChild(appleElem)
 };
 
+//Function to move snake with player inputs
 function moveSnake () {
     window.addEventListener('keydown', function(event) {
         if (event.key === 'w' || event.key === 'ArrowUp') {
-            if (moveDirection.y === 0) {
-            moveDirection = {x: 0, y: -1}
+            if (move.y === 0) {
+            move = {x: 0, y: -1}
             } 
         }
         if (event.key === 's' || event.key === 'ArrowDown') {
-            if (moveDirection.y === 0) {
-            moveDirection = {x: 0, y: 1}
+            if (move.y === 0) {
+            move = {x: 0, y: 1}
             }
         }
         if (event.key === 'a' || event.key === 'ArrowLeft') {
-            if (moveDirection.x === 0) {
-            moveDirection = {x: -1, y: 0}
+            if (move.x === 0) {
+            move = {x: -1, y: 0}
             }
         }
         if (event.key === 'd' || event.key === 'ArrowRight') {
-            if (moveDirection.x === 0) {
-            moveDirection = {x: 1, y: 0}
+            if (move.x === 0) {
+            move = {x: 1, y: 0}
             }
         }
     })
-    return moveDirection
+    return move
 };
 
-function moveSnake() {
-    addSegment()
+//Function to check if apple and snake intersect
+function check(apple, snake) {
+    return apple.x === snake.x && apple.y === snake.y
+};
+
+//Function to check if snake head and apple intersect
+function snakeEat(position, {ignoreHead = false} = {}) {
+    return snakeBody.some((segment, index) => {
+        if (ignoreHead === true && index === 0) return false
+        return check(segment, position)
+    })
+};
+
+//Function to state where snake head is
+function snakeHeadLocation() {
+    return snakeBody[0]
+};
+
+//Function to add sections to snake body
+function addSection() {
+    addLength()
     let input = moveSnake()
     for(let i = snakeBody.length - 2; i >= 0; i--) {
         snakeBody[i + 1] = {...snakeBody[i]}
@@ -78,14 +113,12 @@ function moveSnake() {
     snakeBody[0].y += input.y
 };
 
-function check(food, snake) {
-    return food.x === snake.x && food.y === snake.y
-};
-
+//Function to add count of snake body length
 function snakeGrows(rate) {
     bodyGrow += rate
 };
 
+//Function to update score function based on snake body length
 function addLength() {
     for(let i = 0; i < bodyGrow; i++) {
         updateScore()
@@ -94,35 +127,72 @@ function addLength() {
     bodyGrow = 0
 };
 
+//Function to update score
 function updateScore() {
     newScore++
     score.innerText = ("Score:" + score)
 };
 
-function updateGame() {
-    if (snakeEat(apple)) {
-        snakeGrows(snakeGrowthRate)
+//Function to ensure the apple randomizes inbounds
+function inBounds() {
+    return (
+        apple.x = Math.floor(Math.random() * 21) + 1,
+        apple.y = Math.floor(Math.random() * 21 + 1)
+    )
+};
+
+//Function to pick a new spot for the apple
+function replantApple() {
+    let replantApple
+    while(replantApple == null || snakeEat(replantApple)) {
+        replantApple = inBounds()
+    }
+    return replantApple
+};
+
+//Function to check if snake hits wall
+function hitWall(check) {
+    if (check.x < 1 || check.x > 24 || check.y < 1 || check.y > 24) {
+        return true;
+    }
+};
+
+//Function to check if snake head is intersecting body
+function snakeIntersection() {
+    return snakeEat(snakeBody[0], {ignoreHead: true})
+};
+
+//Function that checks conditions for game to be over
+function gameOver() {
+    if(hitWall(snakeHeadLocation()) || snakeIntersection()) {
+        document.getElementById("game-start").innerText = "Play again?"
+        gameState = false;
+        restartGame();
     }
 }
 
+//Function to restart the game
+function restartGame() {
+    let snakeBody = [{x: 11, y: 11}]
+    let move = {x: 0, y: 0};
+    let apple = {x: 5, y: 5};
+}
+
+//Function to update game during play
+function updateGame() {
+    if (snakeEat(apple)) {
+        snakeGrows(snakeGrowthRate)
+        replantApple()
+    }
+}
+
+//Function to check state of the board
 function renderGame() {
     if (gameState == true) {
-        infoText.textContent = "🐍 Good Luck! 🐍"
         createSnake(board);
         placeApple(board);
-        moveSnake();
+        addSection();
+        updateGame();
     }
     gameOver();
 };
-
-let startGame = document.getElementById("StartGame").addEventListener("click", () => {
-    if (gameState == false) {
-        score.innerText = "Score: 0"
-        moveDirection = {x: 0, y: 0}
-        gameBoard.style.borderColor = "darkgray"
-        gameState = true
-        renderGame();
-    } else {
-        renderGame();
-    }
-});

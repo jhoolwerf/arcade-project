@@ -26,6 +26,9 @@ body {
     grid-template-columns: repeat(21, 1fr);
 }
 
+#score {
+    color: antiquewhite;
+}
 .snake {
     background-color: green;
     border: 1px solid black;
